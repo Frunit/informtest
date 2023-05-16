@@ -1,0 +1,72 @@
+name: Build and deploy game
+
+on:
+  push:
+    branches: [ "master" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    concurrency: ci-${{ github.ref }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get relevant information
+        id: info
+        run: |
+          echo "utcdate=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
+          echo "localdate=$(TZ='Europe/Berlin' date +'%d.%m.%Y %H:%M')" >> $GITHUB_OUTPUT
+          fn=$(find . -maxdepth 1 -name '*.inf')
+          if [ $(echo "$fn" | wc -l) -gt 1 ]; then echo "More than one .inf file found!"; exit 1; fi
+          bfn=$(basename $fn)
+          echo "infile=$bfn" >> $GITHUB_OUTPUT
+          echo "filebase=${bfn%.*}" >> $GITHUB_OUTPUT
+
+      - name: Download inform
+        run: wget -qO- https://github.com/DavidKinder/Inform6/archive/refs/tags/v6.41.tar.gz | tar xvz
+
+      - name: Build inform
+        run: cc -O2 -o ../inform *.c
+        working-directory: Inform6-6.41
+
+      - name: Build game
+        run: ./inform ${{ steps.info.outputs.infile }}
+
+      - name: Find output file
+        id: info2
+        run: |
+          fn=${{ steps.info.outputs.filebase }}.ulx
+          if [ ! -f $fn ]; then fn=$(find . -maxdepth 1 -name '${{ steps.info.outputs.infile }}.z?'); fi;
+          bfn=$(basename $fn)
+          echo "outfile=$bfn" >> $GITHUB_OUTPUT
+
+      - name: Move game file to right dir
+        run: |
+          echo C ${{ steps.info2.outputs }}
+          echo D ${{ steps.info2.outputs.outfile }}
+          mkdir build
+          mv ${{ steps.info2.outputs.outfile }} build
+
+      - name: Update index.html
+        uses: bluwy/substitute-string-action@v1
+        id: sub
+        with:
+          _input-file: './index.html'
+          _output-file: './build/index.html'
+          _format-key: '{{key}}'
+          dateibasis: ${{ steps.info.outputs.filebase }}
+          dateiname: ${{ steps.info2.outputs.outfile }}
+          datum: ${{ steps.info.outputs.localdate }}
+          utcdatum: ${{ steps.info.outputs.utcdate }}
+          username: ${{ github.event.repository.sender }}
+          reponame: ${{ github.event.repository.name }}
+        
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: build
