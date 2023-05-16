@@ -26,7 +26,7 @@ jobs:
           bfn=$(basename $fn)
           echo "infile=$bfn" >> $GITHUB_OUTPUT
           echo "filebase=${bfn%.*}" >> $GITHUB_OUTPUT
-          $user_repo=${{ github.repository }}
+          user_repo=${{ github.repository }}
           echo "reponame=${user_repo#*/}" >> $GITHUB_OUTPUT
 
       - name: Download inform
