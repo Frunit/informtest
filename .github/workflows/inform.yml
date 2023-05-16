@@ -63,8 +63,8 @@ jobs:
           dateiname: ${{ steps.info2.outputs.outfile }}
           datum: ${{ steps.info.outputs.localdate }}
           utcdatum: ${{ steps.info.outputs.utcdate }}
-          username: ${{ github.event.repository.sender }}
-          reponame: ${{ github.event.repository.name }}
+          username: ${GITHUB_REPOSITORY%/*}
+          reponame: ${GITHUB_REPOSITORY#*/}
         
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
