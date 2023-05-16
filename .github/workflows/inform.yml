@@ -26,6 +26,8 @@ jobs:
           bfn=$(basename $fn)
           echo "infile=$bfn" >> $GITHUB_OUTPUT
           echo "filebase=${bfn%.*}" >> $GITHUB_OUTPUT
+          $user_repo=${{ github.repository }}
+          echo "reponame=${user_repo#*/}" >> $GITHUB_OUTPUT
 
       - name: Download inform
         run: wget -qO- https://github.com/DavidKinder/Inform6/archive/refs/tags/v6.41.tar.gz | tar xvz
@@ -64,7 +66,7 @@ jobs:
           datum: ${{ steps.info.outputs.localdate }}
           utcdatum: ${{ steps.info.outputs.utcdate }}
           username: ${{ github.repository_owner }}
-          reponame: ${{ github.repository }}
+          reponame: ${{ steps.info.outputs.reponame }}
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
